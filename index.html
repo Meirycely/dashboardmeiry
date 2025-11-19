@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Vendas | Q1 2025</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* --- CSS Minimalista e Variáveis de Cores --- */
+        :root {
+            --bg-color: #f9fafb;
+            --card-bg: #ffffff;
+            --text-primary: #374151;
+            --text-secondary: #6b7280;
+            --border-color: #e5e7eb;
+            
+            /* Paleta Pastel */
+            --color-blue: #a8d8ea;
+            --color-peach: #fcd5ce;
+            --color-green: #d4e09b;
+            --color-purple: #d6cdea;
+            --color-yellow: #f6eac2;
+            --color-grey: #e0e0e0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            padding: 20px;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* --- Header e Filtros --- */
+        header {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        h1 {
+            font-weight: 600;
+            font-size: 1.8rem;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .filters {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        select {
+            padding: 8px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background-color: var(--card-bg);
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            outline: none;
+            cursor: pointer;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            transition: border-color 0.2s;
+        }
+
+        select:hover {
+            border-color: #d1d5db;
+        }
+
+        /* --- KPI Cards --- */
+        .kpi-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            text-align: center;
+            border: 1px solid var(--border-color);
+        }
+
+        .card h3 {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .card .value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        /* --- Gráficos Grid --- */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        /* Responsividade para mobile */
+        @media (max-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .chart-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border-color);
+            height: 350px; /* Altura fixa para consistência */
+            position: relative;
+        }
+
+        .chart-card h3 {
+            font-size: 1rem;
+            color: var(--text-primary);
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .canvas-container {
+            position: relative;
+            height: 270px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Performance de Vendas Q1 2025</h1>
+            <p class="subtitle">Dashboard Interativo de Business Intelligence</p>
+        </header>
+
+        <!-- Filtros -->
+        <div class="filters">
+            <select id="filterRegion" onchange="updateDashboard()">
+                <option value="all">Todas as Regiões</option>
+                <!-- Opções preenchidas via JS -->
+            </select>
+            <select id="filterSeller" onchange="updateDashboard()">
+                <option value="all">Todos os Vendedores</option>
+                <!-- Opções preenchidas via JS -->
+            </select>
+        </div>
+
+        <!-- KPIs -->
+        <div class="kpi-container">
+            <div class="card">
+                <h3>Vendas Totais</h3>
+                <div class="value" id="kpiTotalSales">€ 0,00</div>
+            </div>
+            <div class="card">
+                <h3>Unidades Vendidas</h3>
+                <div class="value" id="kpiTotalUnits">0</div>
+            </div>
+            <div class="card">
+                <h3>Ticket Médio</h3>
+                <div class="value" id="kpiAvgTicket">€ 0,00</div>
+            </div>
+        </div>
+
+        <!-- Gráficos -->
+        <div class="charts-grid">
+            <!-- Vendas por Região -->
+            <div class="chart-card">
+                <h3>Vendas por Região</h3>
+                <div class="canvas-container">
+                    <canvas id="chartRegion"></canvas>
+                </div>
+            </div>
+
+            <!-- Top Vendedores -->
+            <div class="chart-card">
+                <h3>Top Vendedores (Ranking)</h3>
+                <div class="canvas-container">
+                    <canvas id="chartSellers"></canvas>
+                </div>
+            </div>
+
+            <!-- Receita por Produto -->
+            <div class="chart-card">
+                <h3>Receita por Produto</h3>
+                <div class="canvas-container">
+                    <canvas id="chartProduct"></canvas>
+                </div>
+            </div>
+
+            <!-- Evolução Temporal -->
+            <div class="chart-card">
+                <h3>Evolução Temporal (Vendas)</h3>
+                <div class="canvas-container">
+                    <canvas id="chartTime"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. Dados (Fictícios) ---
+        // Formato de data padronizado para YYYY-MM-DD para facilitar ordenação
+        const rawData = [
+            { date: '2025-01-02', region: 'Norte', seller: 'João Silva', product: 'Portátil Pro 15"', units: 2, price: 1200, total: 2400 },
+            { date: '2025-01-05', region: 'Lisboa', seller: 'Ana Gomes', product: 'Monitor 27"', units: 5, price: 300, total: 1500 },
+            { date: '2025-01-10', region: 'Algarve', seller: 'Pedro Costa', product: 'Teclado Mecânico', units: 10, price: 150, total: 1500 },
+            { date: '2025-01-15', region: 'Norte', seller: 'João Silva', product: 'Rato Ergonómico', units: 8, price: 80, total: 640 },
+            { date: '2025-01-22', region: 'Centro', seller: 'Maria Neves', product: 'Portátil Pro 13"', units: 3, price: 1000, total: 3000 },
+            { date: '2025-02-05', region: 'Lisboa', seller: 'Ana Gomes', product: 'Portátil Pro 15"', units: 1, price: 1200, total: 1200 },
+            { date: '2025-02-12', region: 'Algarve', seller: 'Pedro Costa', product: 'Monitor 24"', units: 4, price: 200, total: 800 },
+            { date: '2025-02-18', region: 'Centro', seller: 'Maria Neves', product: 'Docking Station', units: 6, price: 180, total: 1080 },
+            { date: '2025-03-03', region: 'Norte', seller: 'João Silva', product: 'Headset Wireless', units: 7, price: 120, total: 840 },
+            { date: '2025-03-15', region: 'Lisboa', seller: 'Ana Gomes', product: 'Portátil Pro 13"', units: 2, price: 1000, total: 2000 }
+        ];
+
+        // --- 2. Configuração de Estilos (Cores Pastéis) ---
+        Chart.defaults.font.family = "'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+        Chart.defaults.color = '#6b7280';
+        Chart.defaults.scale.grid.color = '#f3f4f6';
+        
+        const pastelPalette = [
+            '#a8d8ea', // Azul
+            '#fcd5ce', // Pêssego
+            '#d4e09b', // Verde
+            '#d6cdea', // Roxo
+            '#f6eac2', // Amarelo
+            '#e2a0a0', // Vermelho suave
+            '#9be0d4'  // Turquesa
+        ];
+
+        // Instâncias dos gráficos globais
+        let chartRegionInst = null;
+        let chartSellerInst = null;
+        let chartProductInst = null;
+        let chartTimeInst = null;
+
+        // --- 3. Funções Auxiliares ---
+
+        // Formatação de Moeda
+        const formatCurrency = (value) => {
+            return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(value);
+        };
+
+        // Agrupamento de dados
+        const groupBy = (data, key) => {
+            return data.reduce((acc, item) => {
+                acc[item[key]] = (acc[item[key]] || 0) + item.total;
+                return acc;
+            }, {});
+        };
+
+        // --- 4. Inicialização e Lógica ---
+
+        function init() {
+            populateFilters();
+            createEmptyCharts();
+            updateDashboard();
+        }
+
+        function populateFilters() {
+            const regions = [...new Set(rawData.map(d => d.region))].sort();
+            const sellers = [...new Set(rawData.map(d => d.seller))].sort();
+
+            const regionSelect = document.getElementById('filterRegion');
+            regions.forEach(r => {
+                const opt = document.createElement('option');
+                opt.value = r;
+                opt.innerText = r;
+                regionSelect.appendChild(opt);
+            });
+
+            const sellerSelect = document.getElementById('filterSeller');
+            sellers.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s;
+                opt.innerText = s;
+                sellerSelect.appendChild(opt);
+            });
+        }
+
+        function updateDashboard() {
+            const selectedRegion = document.getElementById('filterRegion').value;
+            const selectedSeller = document.getElementById('filterSeller').value;
+
+            // Filtra os dados
+            const filteredData = rawData.filter(item => {
+                const matchRegion = selectedRegion === 'all' || item.region === selectedRegion;
+                const matchSeller = selectedSeller === 'all' || item.seller === selectedSeller;
+                return matchRegion && matchSeller;
+            });
+
+            updateKPIs(filteredData);
+            updateCharts(filteredData);
+        }
+
+        function updateKPIs(data) {
+            const totalSales = data.reduce((sum, item) => sum + item.total, 0);
+            const totalUnits = data.reduce((sum, item) => sum + item.units, 0);
+            const avgTicket = totalUnits > 0 ? totalSales / data.length : 0; // Ticket médio por venda
+
+            document.getElementById('kpiTotalSales').innerText = formatCurrency(totalSales);
+            document.getElementById('kpiTotalUnits').innerText = totalUnits;
+            document.getElementById('kpiAvgTicket').innerText = formatCurrency(avgTicket);
+        }
+
+        function createEmptyCharts() {
+            // Configurações comuns
+            const commonOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                        titleColor: '#374151',
+                        bodyColor: '#374151',
+                        borderColor: '#e5e7eb',
+                        borderWidth: 1,
+                        padding: 10,
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) { label += ': '; }
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(context.parsed.y || context.parsed);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            };
+
+            // 1. Gráfico Região
+            chartRegionInst = new Chart(document.getElementById('chartRegion'), {
+                type: 'bar',
+                data: { labels: [], datasets: [] },
+                options: {
+                    ...commonOptions,
+                    indexAxis: 'y', // Barra horizontal
+                    scales: { x: { beginAtZero: true, grid: { display: false } }, y: { grid: { display: false } } }
+                }
+            });
+
+            // 2. Gráfico Vendedores
+            chartSellerInst = new Chart(document.getElementById('chartSellers'), {
+                type: 'bar',
+                data: { labels: [], datasets: [] },
+                options: {
+                    ...commonOptions,
+                    scales: { y: { beginAtZero: true, grid: { borderDash: [5, 5] } }, x: { grid: { display: false } } }
+                }
+            });
+
+            // 3. Gráfico Produto (Doughnut)
+            chartProductInst = new Chart(document.getElementById('chartProduct'), {
+                type: 'doughnut',
+                data: { labels: [], datasets: [] },
+                options: {
+                    ...commonOptions,
+                    plugins: {
+                        ...commonOptions.plugins,
+                        legend: { display: true, position: 'right', labels: { boxWidth: 12, font: { size: 11 } } },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let value = context.raw;
+                                    return new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' }).format(value);
+                                }
+                            }
+                        }
+                    },
+                    cutout: '65%'
+                }
+            });
+
+            // 4. Gráfico Temporal (Linha)
+            chartTimeInst = new Chart(document.getElementById('chartTime'), {
+                type: 'line',
+                data: { labels: [], datasets: [] },
+                options: {
+                    ...commonOptions,
+                    elements: {
+                        line: { tension: 0.4 }, // Curva suave
+                        point: { radius: 4, hoverRadius: 6 }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { borderDash: [5, 5] } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        function updateCharts(data) {
+            // 1. Processar Dados Região
+            const regionData = groupBy(data, 'region');
+            const regionLabels = Object.keys(regionData);
+            const regionValues = Object.values(regionData);
+
+            chartRegionInst.data = {
+                labels: regionLabels,
+                datasets: [{
+                    label: 'Vendas',
+                    data: regionValues,
+                    backgroundColor: pastelPalette[0],
+                    borderRadius: 4,
+                    barPercentage: 0.6
+                }]
+            };
+            chartRegionInst.update();
+
+            // 2. Processar Dados Vendedores (Ranking)
+            const sellerData = groupBy(data, 'seller');
+            // Converter para array e ordenar
+            const sellerSorted = Object.entries(sellerData)
+                .sort((a, b) => b[1] - a[1]); // Decrescente
+            
+            chartSellerInst.data = {
+                labels: sellerSorted.map(s => s[0]),
+                datasets: [{
+                    label: 'Vendas',
+                    data: sellerSorted.map(s => s[1]),
+                    backgroundColor: pastelPalette[1],
+                    borderRadius: 4,
+                    barPercentage: 0.5
+                }]
+            };
+            chartSellerInst.update();
+
+            // 3. Processar Dados Produto
+            const productData = groupBy(data, 'product');
+            chartProductInst.data = {
+                labels: Object.keys(productData),
+                datasets: [{
+                    data: Object.values(productData),
+                    backgroundColor: pastelPalette,
+                    borderWidth: 0
+                }]
+            };
+            chartProductInst.update();
+
+            // 4. Processar Dados Tempo
+            // Agrupar por data específica e ordenar cronologicamente
+            const timeMap = data.reduce((acc, item) => {
+                // Formatar data para DD/MM
+                const dateObj = new Date(item.date);
+                const dateStr = dateObj.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' });
+                acc[dateStr] = (acc[dateStr] || 0) + item.total;
+                return acc;
+            }, {});
+
+            // Precisamos garantir a ordem cronológica, pois o objeto pode perder ordem
+            // Reordenar baseado nos dados originais ordenados
+            const sortedDates = [...new Set(data.map(d => d.date))].sort();
+            const timeLabels = sortedDates.map(d => {
+                const dateObj = new Date(d);
+                return dateObj.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' });
+            });
+            
+            // Como pode haver multiplas vendas no mesmo dia, usamos o map timeMap
+            const timeValues = timeLabels.map(label => timeMap[label]);
+
+            chartTimeInst.data = {
+                labels: timeLabels,
+                datasets: [{
+                    label: 'Evolução',
+                    data: timeValues,
+                    borderColor: pastelPalette[2],
+                    backgroundColor: 'rgba(212, 224, 155, 0.2)', // Versão transparente do verde pastel
+                    fill: true,
+                    borderWidth: 2
+                }]
+            };
+            chartTimeInst.update();
+        }
+
+        // Iniciar aplicação
+        window.onload = init;
+
+    </script>
+</body>
+</html>
